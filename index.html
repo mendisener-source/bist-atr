@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BIST Ultimate Terminal</title>
+    <title>BIST Ultimate Terminal v3.4</title>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#05070a;--surface:#0d1117;--accent:#00e5ff;--green:#00ff88;--red:#ff3860;--gold:#ffd700;--text:#e0e8f0;--muted:#5a6a7a}
@@ -31,7 +31,7 @@
 <body>
 
 <div class="header">
-    <div style="font-size:10px;color:var(--muted);letter-spacing:2px">BIST ULTIMATE TERMINAL v3.3</div>
+    <div style="font-size:10px;color:var(--muted);letter-spacing:2px">BIST ULTIMATE TERMINAL v3.4</div>
     <div id="status" style="font-size:18px;font-family:'Share Tech Mono';color:var(--green)">SİSTEM HAZIR</div>
 </div>
 
@@ -55,12 +55,12 @@
 
 <script>
     const config = [
-        { id: 0, name: "Z30EA.IS", label: "BIST 30", isReserve: false, history: [100] },
-        { id: 1, name: "ZPT10.IS", label: "BIST Temettü", isReserve: false, history: [100] },
-        { id: 2, name: "ZPLIB.IS", label: "BIST Likit", isReserve: false, history: [100] },
-        { id: 3, name: "OPTGY.IS", label: "Gayrimenkul", isReserve: false, history: [100] },
-        { id: 4, name: "GLDTR.IS", label: "Altın Depo", isReserve: true, history: [100] },
-        { id: 5, name: "NPTLR.IS", label: "Nakit Depo", isReserve: true, history: [100] }
+        { id: 0, name: "Z30EA.IS", label: "BIST 30", isReserve: false, history: [0] },
+        { id: 1, name: "ZPT10.IS", label: "Teknoloji", isReserve: false, history: [0] },
+        { id: 2, name: "ZPLIB.IS", label: "Banka", isReserve: false, history: [0] },
+        { id: 3, name: "OPTGY.IS", label: "Gayrimenkul", isReserve: false, history: [0] },
+        { id: 4, name: "GLDTR.IS", label: "Altın Depo", isReserve: true, history: [0] },
+        { id: 5, name: "NPTLR.IS", label: "Nakit Depo", isReserve: true, history: [0] }
     ];
 
     let prices = {};
@@ -156,7 +156,6 @@
             totalPortfolioTL += val;
             if(p.isReserve) totalReserveTL += val;
 
-            // K/Z Hesaplama
             if(cost > 0 && price > 0) {
                 const plPercent = ((price - cost) / cost) * 100;
                 const plEl = document.getElementById(`pl${p.id}`);
@@ -193,7 +192,7 @@
     function tradeExecuted(id) {
         const lotVal = parseFloat(document.getElementById(`lot${id}`).value);
         config[id].history.push(lotVal);
-        if(config[id].history.length > 15) config[id].history.shift();
+        if(config[id].history.length > 20) config[id].history.shift();
         renderChart(id);
         save();
         alert("Kayıt başarılı! Snowball büyüyor.");
@@ -221,11 +220,11 @@
             data[`cost${p.id}`] = document.getElementById(`cost${p.id}`).value;
             data[`h${p.id}`] = p.history;
         });
-        localStorage.setItem('bist_ultimate_v33', JSON.stringify(data));
+        localStorage.setItem('bist_ultimate_v34', JSON.stringify(data));
     }
 
     function load() {
-        const saved = JSON.parse(localStorage.getItem('bist_ultimate_v33'));
+        const saved = JSON.parse(localStorage.getItem('bist_ultimate_v34'));
         if(saved) {
             config.forEach(p => {
                 if(saved[`lot${p.id}`]) document.getElementById(`lot${p.id}`).value = saved[`lot${p.id}`];
