@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BIST Wealth Machine</title>
+    <title>Smart BIST Terminal</title>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#05070a;--surface:#0d1117;--accent:#00e5ff;--green:#00ff88;--red:#ff3860;--gold:#ffd700;--text:#e0e8f0;--muted:#5a6a7a}
         body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;padding:10px;margin:0;display:flex;flex-direction:column;align-items:center}
         .header{width:92%;background:rgba(13,17,23,0.9);padding:15px;border-radius:15px;border:1px solid var(--accent);text-align:center;margin-top:10px;margin-bottom:10px}
+        .pool-stats{width:92%; background:rgba(0,229,255,0.05); border:1px solid #222; border-radius:12px; padding:10px; margin-bottom:10px; display:flex; justify-content:space-around; font-family:'Share Tech Mono'}
         .tabs{display:flex;gap:8px;margin-bottom:15px;overflow-x:auto;width:95%;padding:5px;scrollbar-width:none}
         .tab{min-width:85px;padding:12px;background:var(--surface);border:1px solid #222;border-radius:10px;cursor:pointer;font-size:12px;text-align:center;transition:0.3s}
         .tab.active{background:var(--accent);color:black;font-weight:700;box-shadow:0 0 15px var(--accent)}
@@ -18,7 +19,7 @@
         .action-sig{font-size:20px;color:var(--gold);background:rgba(255,215,0,0.05);padding:15px;border-radius:12px;text-align:center;font-weight:700;margin:15px 0;border:1px dashed var(--gold)}
         .alarm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}
         .alarm-box{background:rgba(255,255,255,0.02);padding:10px;border-radius:12px;text-align:center;border:1px solid #333}
-        input{width:85%;padding:10px;background:#000;border:1px solid #333;color:var(--green);font-family:'Share Tech Mono';text-align:center;border-radius:8px;margin-top:5px;font-size:16px}
+        input{width:90%;padding:10px;background:#000;border:1px solid #333;color:var(--green);font-family:'Share Tech Mono';text-align:center;border-radius:8px;margin-top:5px;font-size:16px}
         .btn{width:100%;padding:18px;border-radius:15px;border:none;font-weight:700;cursor:pointer;margin-top:10px;font-family:'Rajdhani';font-size:16px;text-transform:uppercase}
         .snowball-chart{height:80px;width:100%;background:rgba(0,0,0,0.3);border-radius:10px;margin-top:10px;display:flex;align-items:flex-end;gap:3px;padding:5px;box-sizing:border-box}
         .bar{flex:1;background:linear-gradient(to top, var(--green), #00a055);border-radius:3px 3px 0 0;min-height:2px}
@@ -28,8 +29,13 @@
 <body>
 
 <div class="header">
-    <div style="font-size:10px;color:var(--muted);letter-spacing:2px">BIST STRATEGY TERMINAL v3.1</div>
+    <div style="font-size:10px;color:var(--muted);letter-spacing:2px">BIST SMART POOL v3.2</div>
     <div id="status" style="font-size:18px;font-family:'Share Tech Mono';color:var(--green)">SİSTEM HAZIR</div>
+</div>
+
+<div class="pool-stats">
+    <div style="text-align:center"><small>NAKİT DEPO</small><br><span id="total-pool" style="color:var(--gold)">0 TL</span></div>
+    <div style="text-align:center"><small>DEPO ORANI</small><br><span id="pool-ratio" style="color:var(--accent)">%--</span></div>
 </div>
 
 <div class="tabs" id="tab-list">
@@ -47,13 +53,15 @@
 
 <script>
     const config = [
-        { id: 0, name: "Z30EA.IS", label: "BIST 30", mult: 1.0, history: [10] },
-        { id: 1, name: "ZPT10.IS", label: "BIST Temettü", mult: 1.0, history: [10] },
-        { id: 2, name: "ZPLIB.IS", label: "BIST Likit", mult: 1.0, history: [10] },
-        { id: 3, name: "OPTGY.IS", label: "Gayrimenkul", mult: 1.0, history: [10] },
-        { id: 4, name: "GLDTR.IS", label: "Altın", mult: 1.0, history: [10] },
-        { id: 5, name: "NPTLR.IS", label: "Para Piyasası", mult: 1.0, history: [10] }
+        { id: 0, name: "Z30EA.IS", label: "BIST 30", isReserve: false, history: [100] },
+        { id: 1, name: "ZPT10.IS", label: "BIST Temettü", isReserve: false, history: [100] },
+        { id: 2, name: "ZPLIB.IS", label: "BIST Likit", isReserve: false, history: [100] },
+        { id: 3, name: "OPTGY.IS", label: "Gayrimenkul", isReserve: false, history: [100] },
+        { id: 4, name: "GLDTR.IS", label: "Altın Depo", isReserve: true, history: [100] },
+        { id: 5, name: "NPTLR.IS", label: "Nakit Depo", isReserve: true, history: [100] }
     ];
+
+    let prices = {};
 
     function init() {
         const container = document.getElementById('p-container');
@@ -61,17 +69,17 @@
             container.innerHTML += `
                 <div id="card${p.id}" class="card ${p.id === 0 ? 'active' : ''}">
                     <div style="display:flex; justify-content:space-between; color:var(--gold)">
-                        <span style="font-weight:700">${p.label}</span>
+                        <span style="font-weight:700">${p.label} ${p.isReserve ? '(DEPO)' : ''}</span>
                         <span style="font-size:12px">${p.name}</span>
                     </div>
                     <div class="price-display" id="price${p.id}">---</div>
                     
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
-                        <div><small>ELDEKİ LOT</small><br><input type="number" id="lot${p.id}" value="100" onchange="save()"></div>
-                        <div><small>AYRILAN NAKİT</small><br><input type="number" id="cash${p.id}" value="5000" onchange="save()"></div>
+                    <div style="text-align:center; margin-bottom:15px">
+                        <small>GÜNCEL ELDEKİ LOT ADEDİ</small><br>
+                        <input type="number" id="lot${p.id}" value="100" onchange="calculate()">
                     </div>
 
-                    <div id="action${p.id}" class="action-sig">Fiyat Bekleniyor...</div>
+                    <div id="action${p.id}" class="action-sig">${p.isReserve ? 'DEPO VARLIĞI' : 'Fiyat Bekleniyor...'}</div>
 
                     <div class="alarm-grid">
                         <div class="alarm-box" style="border-bottom:3px solid var(--red)">
@@ -85,11 +93,11 @@
                     </div>
 
                     <div style="margin-top:10px">
-                        <small style="color:var(--muted)">SNOWBALL (LOT BİRİKİMİ)</small>
+                        <small style="color:var(--muted)">ADET BİRİKİMİ (SNOWBALL)</small>
                         <div class="snowball-chart" id="chart${p.id}"></div>
                     </div>
 
-                    <button class="btn" style="background:var(--green);color:black;margin-top:20px" onclick="tradeExecuted(${p.id})">ADET ARTIŞINI KAYDET</button>
+                    <button class="btn" style="background:var(--green);color:black;margin-top:20px" onclick="tradeExecuted(${p.id})">LOT ARTIŞINI KAYDET</button>
                 </div>
             `;
             renderChart(p.id);
@@ -105,54 +113,81 @@
     async function updateAll() {
         const statusEl = document.getElementById('status');
         statusEl.innerText = "VERİLER ÇEKİLİYOR...";
-        statusEl.style.color = "var(--gold)";
-
+        
         for(let p of config) {
             try {
                 const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+p.name+'?interval=1d&range=20d')}`);
                 const data = await res.json();
-                const price = data.chart.result[0].meta.regularMarketPrice;
-                const quotes = data.chart.result[0].indicators.quote[0];
+                const currentPrice = data.chart.result[0].meta.regularMarketPrice;
+                prices[p.id] = currentPrice;
                 
-                let tr = 0;
-                let validDays = 0;
+                const quotes = data.chart.result[0].indicators.quote[0];
+                let tr = 0; let validDays = 0;
                 for(let i=quotes.close.length-1; i >= 0 && validDays < 14; i--) {
                     if(quotes.high[i] && quotes.low[i]) {
                         tr += (quotes.high[i] - quotes.low[i]);
                         validDays++;
                     }
                 }
-                const atr = (tr / validDays) * p.mult;
+                const atr = (tr / validDays);
 
-                document.getElementById(`price${p.id}`).innerText = price.toFixed(2);
-                document.getElementById(`sell${p.id}`).innerText = (price + atr).toFixed(2);
-                document.getElementById(`buy${p.id}`).innerText = (price - atr).toFixed(2);
-
-                const lot = parseFloat(document.getElementById(`lot${p.id}`).value);
-                const cash = parseFloat(document.getElementById(`cash${p.id}`).value);
-                const totalVal = (price * lot) + cash;
-                // Shannon/Kelly %50-%50 Rebalance mantığı
-                const targetLotCount = (totalVal * 0.5) / price;
-                const pending = Math.round(targetLotCount - lot);
-
-                const sig = document.getElementById(`action${p.id}`);
-                if(pending > 0) { sig.innerHTML = `ALIM SİNYALİ: <span style="color:var(--green)">+${pending} LOT</span>`; }
-                else if(pending < 0) { sig.innerHTML = `SATIŞ SİNYALİ: <span style="color:var(--red)">${Math.abs(pending)} LOT</span>`; }
-                else { sig.innerHTML = "DURUM: İDEAL DENGEDE"; }
+                document.getElementById(`price${p.id}`).innerText = currentPrice.toFixed(2);
+                document.getElementById(`sell${p.id}`).innerText = (currentPrice + atr).toFixed(2);
+                document.getElementById(`buy${p.id}`).innerText = (currentPrice - atr).toFixed(2);
             } catch(e) { console.error(p.name + " hatası"); }
         }
         statusEl.innerText = "PİYASA GÜNCEL";
-        statusEl.style.color = "var(--green)";
+        calculate();
+    }
+
+    function calculate() {
+        let totalReserveTL = 0;
+        let totalPortfolioTL = 0;
+
+        // 1. Önce Nakit Depoyu (GLDTR + NPTLR) hesapla
+        config.forEach(p => {
+            const lot = parseFloat(document.getElementById(`lot${p.id}`).value) || 0;
+            const price = prices[p.id] || 0;
+            const val = lot * price;
+            totalPortfolioTL += val;
+            if(p.isReserve) totalReserveTL += val;
+        });
+
+        document.getElementById('total-pool').innerText = Math.round(totalReserveTL).toLocaleString() + " TL";
+        document.getElementById('pool-ratio').innerText = "%" + (totalPortfolioTL > 0 ? ((totalReserveTL / totalPortfolioTL) * 100).toFixed(1) : "0");
+
+        // 2. Her varlık için sinyal üret (Dengeleme: Nakit Depo vs Varlık)
+        config.forEach(p => {
+            if(p.isReserve) return;
+            const lot = parseFloat(document.getElementById(`lot${p.id}`).value) || 0;
+            const price = prices[p.id] || 0;
+            
+            // Shannon's Demon: Varlık Değeri vs Kendi Nakit Payı (Basit Eşit Ağırlık)
+            const assetVal = lot * price;
+            // Her fon için havuzun bir kısmını (Havuz / 4 aktif fon) hedefle
+            const targetValFromPool = totalReserveTL / 4; 
+            const diffTL = targetValFromPool - assetVal;
+            const pending = Math.round(diffTL / (price || 1));
+
+            const sig = document.getElementById(`action${p.id}`);
+            if(pending > 1) { 
+                sig.innerHTML = `ALIM VAKTİ: <span style="color:var(--green)">+${pending} ADET</span><br><small>Depodan Karşıla</small>`; 
+            } else if(pending < -1) { 
+                sig.innerHTML = `SATIŞ VAKTİ: <span style="color:var(--red)">${Math.abs(pending)} ADET</span><br><small>Depoya Aktar</small>`; 
+            } else { 
+                sig.innerHTML = "DURUM: DENGELİ"; 
+            }
+        });
         save();
     }
 
     function tradeExecuted(id) {
         const lotVal = parseFloat(document.getElementById(`lot${id}`).value);
         config[id].history.push(lotVal);
-        if(config[id].history.length > 15) config[id].history.shift();
+        if(config[id].history.length > 20) config[id].history.shift();
         renderChart(id);
         save();
-        alert("Lot birikimi kaydedildi! Kar topu büyüyor.");
+        alert("Lot birikimi kaydedildi!");
     }
 
     function renderChart(id) {
@@ -164,7 +199,6 @@
         history.forEach(l => {
             const bar = document.createElement('div');
             bar.className = 'bar';
-            // Dinamik boylandırma
             const height = history.length > 1 ? (((l - min) / (max - min || 1)) * 70 + 30) : 50;
             bar.style.height = height + '%';
             chart.appendChild(bar);
@@ -175,18 +209,16 @@
         const data = {};
         config.forEach(p => {
             data[`lot${p.id}`] = document.getElementById(`lot${p.id}`).value;
-            data[`cash${p.id}`] = document.getElementById(`cash${p.id}`).value;
             data[`h${p.id}`] = p.history;
         });
-        localStorage.setItem('bist_wealth_v3', JSON.stringify(data));
+        localStorage.setItem('bist_smart_pool_v32', JSON.stringify(data));
     }
 
     function load() {
-        const saved = JSON.parse(localStorage.getItem('bist_wealth_v3'));
+        const saved = JSON.parse(localStorage.getItem('bist_smart_pool_v32'));
         if(saved) {
             config.forEach(p => {
                 if(saved[`lot${p.id}`]) document.getElementById(`lot${p.id}`).value = saved[`lot${p.id}`];
-                if(saved[`cash${p.id}`]) document.getElementById(`cash${p.id}`).value = saved[`cash${p.id}`];
                 if(saved[`h${p.id}`]) { p.history = saved[`h${p.id}`]; renderChart(p.id); }
             });
         }
