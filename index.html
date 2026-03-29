@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BIST Ultimate Terminal v3.7</title>
+    <title>BIST Ultimate Terminal v3.8</title>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#05070a;--surface:#0d1117;--accent:#00e5ff;--green:#00ff88;--red:#ff3860;--gold:#ffd700;--text:#e0e8f0;--muted:#5a6a7a}
@@ -18,20 +18,22 @@
         .price-display{font-family:'Share Tech Mono';font-size:38px;color:var(--accent);margin:5px 0;text-shadow:0 0 10px rgba(0,229,255,0.3)}
         .stats-row{display:flex; justify-content:space-between; margin-bottom:10px; font-size:14px; color:var(--muted)}
         .action-sig{font-size:18px;color:var(--gold);background:rgba(255,215,0,0.05);padding:15px;border-radius:12px;text-align:center;font-weight:700;margin:15px 0;border:1px dashed var(--gold);line-height:1.5}
-        .alarm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}
-        .alarm-box{background:rgba(255,255,255,0.02);padding:10px;border-radius:12px;text-align:center;border:1px solid #333}
         .input-grid{display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px}
         input{width:90%;padding:10px;background:#000;border:1px solid #333;color:var(--green);font-family:'Share Tech Mono';text-align:center;border-radius:8px;margin-top:5px;font-size:14px}
         .btn{width:100%;padding:18px;border-radius:15px;border:none;font-weight:700;cursor:pointer;margin-top:10px;font-family:'Rajdhani';font-size:16px;text-transform:uppercase}
-        .snowball-chart{height:80px;width:100%;background:rgba(0,0,0,0.3);border-radius:10px;margin-top:10px;display:flex;align-items:flex-end;gap:3px;padding:5px;box-sizing:border-box}
-        .bar{flex:1;background:linear-gradient(to top, var(--green), #00a055);border-radius:3px 3px 0 0;min-height:2px}
+        
+        /* Grafik Alanı */
+        .chart-container{width:100%; height:120px; background:rgba(0,0,0,0.4); border-radius:12px; margin:10px 0; border:1px solid #222; position:relative; overflow:hidden}
+        .chart-svg{width:100%; height:100%; stroke:var(--green); stroke-width:3; fill:none; filter: drop-shadow(0 0 5px var(--green))}
+        .chart-fill{fill: url(#grad); stroke: none; opacity: 0.2}
+
         @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div style="font-size:10px;color:var(--muted);letter-spacing:2px">BIST ULTIMATE TERMINAL v3.7</div>
+    <div style="font-size:10px;color:var(--muted);letter-spacing:2px">BIST ULTIMATE TERMINAL v3.8</div>
     <div id="status" style="font-size:18px;font-family:'Share Tech Mono';color:var(--green)">SİSTEM HAZIR</div>
 </div>
 
@@ -55,12 +57,12 @@
 
 <script>
     const config = [
-        { id: 0, name: "Z30EA.IS", label: "BIST 30", isReserve: false, mult: 1.2, history: [0] },
-        { id: 1, name: "ZPT10.IS", label: "Teknoloji", isReserve: false, mult: 1.2, history: [0] },
-        { id: 2, name: "ZPLIB.IS", label: "Banka", isReserve: false, mult: 1.2, history: [0] },
-        { id: 3, name: "OPTGY.IS", label: "Gayrimenkul", isReserve: false, mult: 1.2, history: [0] },
-        { id: 4, name: "GLDTR.IS", label: "Altın Depo", isReserve: true, mult: 1.2, history: [0] },
-        { id: 5, name: "NPTLR.IS", label: "Nakit Depo", isReserve: true, mult: 1.2, history: [0] }
+        { id: 0, name: "Z30EA.IS", label: "BIST 30", isReserve: false, mult: 1.2, history: [100, 105, 102, 110] },
+        { id: 1, name: "ZPT10.IS", label: "Teknoloji", isReserve: false, mult: 1.2, history: [100] },
+        { id: 2, name: "ZPLIB.IS", label: "Banka", isReserve: false, mult: 1.2, history: [100] },
+        { id: 3, name: "OPTGY.IS", label: "Gayrimenkul", isReserve: false, mult: 1.2, history: [100] },
+        { id: 4, name: "GLDTR.IS", label: "Altın Depo", isReserve: true, mult: 1.2, history: [100] },
+        { id: 5, name: "NPTLR.IS", label: "Nakit Depo", isReserve: true, mult: 1.2, history: [100] }
     ];
 
     let prices = {};
@@ -82,25 +84,25 @@
                         <div><small>MALİYET (TL)</small><br><input type="number" id="cost${p.id}" value="0" onchange="calculate()"></div>
                     </div>
 
-                    <div id="action${p.id}" class="action-sig">${p.isReserve ? 'DENGELENİYOR...' : 'Veri Bekleniyor...'}</div>
-
-                    <div class="alarm-grid">
-                        <div class="alarm-box" style="border-bottom:3px solid var(--red)">
-                            <small style="color:var(--red)">SATIŞ LİMİTİ</small>
-                            <div id="sell${p.id}" style="font-size:18px;font-family:'Share Tech Mono'">--</div>
-                        </div>
-                        <div class="alarm-box" style="border-bottom:3px solid var(--green)">
-                            <small style="color:var(--green)">ALIM LİMİTİ</small>
-                            <div id="buy${p.id}" style="font-size:18px;font-family:'Share Tech Mono'">--</div>
-                        </div>
-                    </div>
+                    <div id="action${p.id}" class="action-sig">DENGELENİYOR...</div>
 
                     <div style="margin-top:10px">
-                        <small style="color:var(--muted)">ADET BİRİKİMİ (SNOWBALL)</small>
-                        <div class="snowball-chart" id="chart${p.id}"></div>
+                        <small style="color:var(--muted)">ADET BİRİKİMİ (SNOWBALL CHART)</small>
+                        <div class="chart-container" id="chart-container-${p.id}">
+                            <svg class="chart-svg" id="svg-${p.id}" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                <defs>
+                                    <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" style="stop-color:var(--green);stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:var(--green);stop-opacity:0" />
+                                    </linearGradient>
+                                </defs>
+                                <path class="chart-fill" d="" id="fill-${p.id}"></path>
+                                <path d="" id="path-${p.id}"></path>
+                            </svg>
+                        </div>
                     </div>
 
-                    <button class="btn" style="background:var(--green);color:black;margin-top:20px" onclick="tradeExecuted(${p.id})">İŞLEMİ KAYDET</button>
+                    <button class="btn" style="background:var(--green);color:black;margin-top:20px" onclick="tradeExecuted(${p.id})">İŞLEMİ KAYDET (SNOWBALL)</button>
                 </div>
             `;
             renderChart(p.id);
@@ -129,8 +131,6 @@
                 }
                 const atr = (tr / validDays) * p.mult;
                 document.getElementById(`price${p.id}`).innerText = currentPrice.toFixed(2);
-                document.getElementById(`sell${p.id}`).innerText = (currentPrice + atr).toFixed(2);
-                document.getElementById(`buy${p.id}`).innerText = (currentPrice - atr).toFixed(2);
             } catch(e) { console.error(p.name + " hatası"); }
         }
         statusEl.innerText = "PİYASA GÜNCEL";
@@ -144,7 +144,6 @@
 
         config.forEach(p => {
             const lot = parseFloat(document.getElementById(`lot${p.id}`).value) || 0;
-            const cost = parseFloat(document.getElementById(`cost${p.id}`).value) || 0;
             const price = prices[p.id] || 0;
             const val = lot * price;
             totalPortfolioTL += val;
@@ -152,57 +151,31 @@
                 totalReserveTL += val;
                 reserves.push({ id: p.id, label: p.label, price: price, val: val });
             }
-            if(cost > 0 && price > 0) {
-                const plPercent = ((price - cost) / cost) * 100;
-                const plEl = document.getElementById(`pl${p.id}`);
-                plEl.innerText = `K/Z: %${plPercent.toFixed(1)}`;
-                plEl.style.color = plPercent >= 0 ? 'var(--green)' : 'var(--red)';
-            }
             document.getElementById(`total-row${p.id}`).innerText = `Pozisyon Değeri: ${Math.round(val).toLocaleString()} TL`;
         });
 
         document.getElementById('total-pool').innerText = Math.round(totalReserveTL).toLocaleString() + " TL";
         document.getElementById('total-val').innerText = Math.round(totalPortfolioTL).toLocaleString() + " TL";
 
-        // Rezerv içi denge (Altın vs Nakit)
-        const targetReserveEach = totalReserveTL / 2;
-
         config.forEach(p => {
             const price = prices[p.id] || 0;
             const sig = document.getElementById(`action${p.id}`);
+            if(p.isReserve) { sig.innerHTML = "DEPO VARLIĞI"; return; }
             
-            if(p.isReserve) {
-                // Depo içi denge uyarısı
-                const currentVal = parseFloat(document.getElementById(`lot${p.id}`).value || 0) * price;
-                const diff = targetReserveEach - currentVal;
-                const pending = Math.round(diff / (price || 1));
-                if(Math.abs(pending * price) > 500) { // 500 TL üzeri sapmalarda uyar
-                    sig.innerHTML = pending > 0 ? `DEPO EKSİĞİ: <span style="color:var(--gold)">+${pending} ADET AL</span>` : `DEPO FAZLASI: <span style="color:var(--red)">${Math.abs(pending)} ADET SAT</span>`;
-                } else { sig.innerHTML = "DEPO DENGELİ"; }
-                return;
-            }
-
             const lot = parseFloat(document.getElementById(`lot${p.id}`).value) || 0;
-            const assetVal = lot * price;
             const targetValFromPool = totalReserveTL / 4; 
-            const diffTL = targetValFromPool - assetVal;
+            const diffTL = targetValFromPool - (lot * price);
             const pending = Math.round(diffTL / (price || 1));
 
             if(pending > 1) {
-                const costTL = pending * price;
-                // En çok parası olan rezervden SAT önerisi
                 let bestSource = reserves.reduce((prev, curr) => (prev.val > curr.val) ? prev : curr);
-                const sellLot = Math.ceil(costTL / bestSource.price);
+                const sellLot = Math.ceil((pending * price) / bestSource.price);
                 sig.innerHTML = `ALIM VAKTİ: <span style="color:var(--green)">+${pending} ADET</span><br><small>👉 ${sellLot} adet ${bestSource.label} SAT</small>`; 
-            } 
-            else if(pending < -1) {
-                const gainTL = Math.abs(pending) * price;
-                // En az parası olan rezervi BESLE önerisi
+            } else if(pending < -1) {
                 let bestTarget = reserves.reduce((prev, curr) => (prev.val < curr.val) ? prev : curr);
-                const buyLot = Math.floor(gainTL / bestTarget.price);
+                const buyLot = Math.floor((Math.abs(pending) * price) / bestTarget.price);
                 sig.innerHTML = `SATIŞ VAKTİ: <span style="color:var(--red)">${Math.abs(pending)} ADET</span><br><small>👉 ${buyLot} adet ${bestTarget.label} AL</small>`; 
-            } 
-            else { sig.innerHTML = "DURUM: DENGELİ"; }
+            } else { sig.innerHTML = "DURUM: DENGELİ"; }
         });
         save();
     }
@@ -211,22 +184,28 @@
         const lotVal = parseFloat(document.getElementById(`lot${id}`).value);
         config[id].history.push(lotVal);
         if(config[id].history.length > 20) config[id].history.shift();
-        renderChart(id); save(); alert("Kayıt başarılı!");
+        renderChart(id);
+        save();
     }
 
     function renderChart(id) {
-        const chart = document.getElementById(`chart${id}`);
-        chart.innerHTML = '';
+        const path = document.getElementById(`path-${id}`);
+        const fill = document.getElementById(`fill-${id}`);
         const history = config[id].history;
-        const max = Math.max(...history, 1);
+        if(history.length < 2) return;
+
+        const max = Math.max(...history);
         const min = Math.min(...history);
-        history.forEach(l => {
-            const bar = document.createElement('div');
-            bar.className = 'bar';
-            const height = history.length > 1 ? (((l - min) / (max - min || 1)) * 70 + 30) : 50;
-            bar.style.height = height + '%';
-            chart.appendChild(bar);
-        });
+        const range = max - min || 1;
+        const stepX = 100 / (history.length - 1);
+
+        let d = `M 0 ${100 - ((history[0] - min) / range * 80 + 10)}`;
+        for(let i = 1; i < history.length; i++) {
+            const y = 100 - ((history[i] - min) / range * 80 + 10);
+            d += ` L ${i * stepX} ${y}`;
+        }
+        path.setAttribute('d', d);
+        fill.setAttribute('d', d + ` L 100 100 L 0 100 Z`);
     }
 
     function save() {
@@ -236,11 +215,11 @@
             data[`cost${p.id}`] = document.getElementById(`cost${p.id}`).value;
             data[`h${p.id}`] = p.history;
         });
-        localStorage.setItem('bist_ultimate_v37', JSON.stringify(data));
+        localStorage.setItem('bist_ultimate_v38', JSON.stringify(data));
     }
 
     function load() {
-        const saved = JSON.parse(localStorage.getItem('bist_ultimate_v37'));
+        const saved = JSON.parse(localStorage.getItem('bist_ultimate_v38'));
         if(saved) {
             config.forEach(p => {
                 if(saved[`lot${p.id}`]) document.getElementById(`lot${p.id}`).value = saved[`lot${p.id}`];
